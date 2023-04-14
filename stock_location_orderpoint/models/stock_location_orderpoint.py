@@ -274,11 +274,12 @@ class StockLocationOrderpoint(models.Model):
         return min(qty_to_replenish, virtual_available_on_src)
 
     def _get_qties_to_replenish(self, moves_by_location):
-        products = self.env["product.product"]
+        products = set()
         for moves in moves_by_location.values():
-            products |= moves.product_id
+            products.update(moves.product_id.ids)
         qties_on_locations = self._compute_quantities_dict(
-            (self.location_id | self.location_src_id), products
+            (self.location_id | self.location_src_id),
+            self.env["product.product"].browse(products),
         )
         qties_replenished = {}
         qties_to_replenish = {}
@@ -316,13 +317,12 @@ class StockLocationOrderpoint(models.Model):
             moves_by_location
         )
         procurements = []
+        move_obj = self.env["stock.move"]
         for orderpoint, qties_to_replenish in qties_to_replenish_by_orderpoint.items():
             proc_vals = orderpoint._prepare_procurement_values()
             for product, qty in qties_to_replenish:
-                date_planned = min(
-                    moves_by_location[orderpoint.location_id]
-                    .filtered(lambda move: move.product_id == product)
-                    .mapped("date")
+                date_planned = move_obj._get_location_orderpoint_replenishment_date(
+                    moves_by_location[orderpoint.location_id], product
                 )
                 procurements.append(
                     orderpoint._prepare_procurement(
@@ -352,14 +352,9 @@ class StockLocationOrderpoint(models.Model):
         domain = [
             ("state", "in", ["confirmed", "partially_available"]),
             ("procure_method", "=", "make_to_stock"),
+            ("location_orderpoint_id", "in", self.ids),
         ]
-        orderpoint_domains = []
-        for orderpoint in self:
-            _domain = [("origin", "=", orderpoint.name)]
-            if orderpoint.location_src_id:
-                _domain += [("location_id", "=", orderpoint.location_src_id.id)]
-            orderpoint_domains.append(_domain)
-        return expression.AND([domain, expression.OR(orderpoint_domains)])
+        return domain
 
     def _assign_replenishment_moves(self):
         """Assigns moves created by the orderpoints"""

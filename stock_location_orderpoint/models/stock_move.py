@@ -1,6 +1,7 @@
 # Copyright 2023 Michael Tietz (MT Software) <mtietz@mt-software.de>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import _, fields, models
+from odoo.tools import ormcache
 
 from odoo.addons.queue_job.job import identity_exact
 
@@ -12,17 +13,24 @@ class StockMove(models.Model):
         "stock.location.orderpoint", "Stock location orderpoint"
     )
 
+    @ormcache("moves", "product")
+    def _get_location_orderpoint_replenishment_date(self, moves, product):
+        return min(
+            moves.filtered(lambda move: move.product_id == product).mapped("date")
+        )
+
     def _prepare_location_orderpoint_replenishment(self, location_field, domain):
         locations_products = {}
+        product_obj = self.env["product.product"]
         for move in self:
             if not move.filtered_domain(domain):
                 continue
             location = getattr(move, location_field)
-            locations_products.setdefault(location, self.env["product.product"])
-            locations_products[location] |= move.product_id
+            locations_products.setdefault(location, set())
+            locations_products[location].add(move.product_id.id)
 
         for location, products in locations_products.items():
-            for product in products:
+            for product in product_obj.browse(products):
                 self._enqueue_auto_replenishment(
                     location, product, location_field
                 ).delay()

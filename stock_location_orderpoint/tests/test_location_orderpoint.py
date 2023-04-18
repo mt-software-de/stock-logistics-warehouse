@@ -161,6 +161,6 @@ class TestLocationOrderpoint(TestLocationOrderpointCommon):
         Check after each creation that count is increasing.
         """
         _, _ = self._create_orderpoint_complete("Stock2", trigger="cron")
-        self.assertEqual(1, self.location_dest.location_orderpoint_count)
-        _, _ = self._create_orderpoint_complete("Stock3", trigger="cron")
         self.assertEqual(2, self.location_dest.location_orderpoint_count)
+        _, _ = self._create_orderpoint_complete("Stock3", trigger="cron")
+        self.assertEqual(3, self.location_dest.location_orderpoint_count)

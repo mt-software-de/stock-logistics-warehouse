@@ -22,9 +22,7 @@ class StockMove(models.Model):
     def _prepare_location_orderpoint_replenishment(self, location_field, domain):
         locations_products = {}
         product_obj = self.env["product.product"]
-        for move in self:
-            if not move.filtered_domain(domain):
-                continue
+        for move in self.filtered_domain(domain):
             location = getattr(move, location_field)
             locations_products.setdefault(location, set())
             locations_products[location].add(move.product_id.id)

@@ -19,7 +19,25 @@ class StockMove(models.Model):
             self.filtered(lambda move: move.product_id == product).mapped("date")
         )
 
-    def _prepare_location_orderpoint_replenishment(self, location_field, domain):
+    def _prepare_auto_replenishment_for_waiting_moves(self):
+        self._prepare_auto_replenishment(
+            "location_id",
+            self.env["stock.location.orderpoint"]._get_waiting_move_domain(),
+        )
+
+    def _prepare_auto_replenishment_for_done_moves(self):
+        self._prepare_auto_replenishment(
+            "location_dest_id",
+            [
+                ("move_dest_ids", "=", False),
+                ("procure_method", "=", "make_to_stock"),
+                ("state", "=", "done"),
+            ],
+        )
+
+    def _prepare_auto_replenishment(self, location_field, domain):
+        if self.env.context.get("skip_auto_replenishment"):
+            return
         locations_products = {}
         product_obj = self.env["product.product"]
         for move in self:
@@ -71,14 +89,11 @@ class StockMove(models.Model):
         )
         return job
 
-    def _action_confirm(self, *args, **kwargs):
+    def _action_assign(self, *args, **kwargs):
         """This triggers the replenishment for new moves which are waiting for stock"""
-        moves = super()._action_confirm(*args, **kwargs)
-        moves._prepare_location_orderpoint_replenishment(
-            "location_id",
-            self.env["stock.location.orderpoint"]._get_waiting_move_domain(),
-        )
-        return moves
+        res = super()._action_assign(*args, **kwargs)
+        self._prepare_auto_replenishment_for_waiting_moves()
+        return res
 
     def _action_done(self, *args, **kwargs):
         """
@@ -86,11 +101,5 @@ class StockMove(models.Model):
         when the stock increases on a source location of an orderpoint
         """
         moves = super()._action_done(*args, **kwargs)
-        moves._prepare_location_orderpoint_replenishment(
-            "location_dest_id",
-            [
-                ("move_dest_ids", "=", False),
-                ("procure_method", "=", "make_to_stock"),
-            ],
-        )
+        moves._prepare_auto_replenishment_for_done_moves()
         return moves

@@ -49,15 +49,7 @@ class TestLocationOrderpoint(TestLocationOrderpointCommon, SourceRelocateCommon)
             move._assign_picking()
             move._action_assign()
             self.assertEqual(move.location_id, internal_location)
-            trap.assert_jobs_count(2, only=job_func)
-            trap.assert_enqueued_job(
-                orderpoint.run_auto_replenishment,
-                args=(move.product_id, self.wh.lot_stock_id, "location_id"),
-                kwargs={},
-                properties=dict(
-                    identity_key=identity_exact,
-                ),
-            )
+            trap.assert_jobs_count(1, only=job_func)
             trap.assert_enqueued_job(
                 orderpoint.run_auto_replenishment,
                 args=(move.product_id, internal_location, "location_id"),

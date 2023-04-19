@@ -18,6 +18,7 @@ class TestLocationOrderpointCommon(SavepointCase):
         )
         cls.warehouse = cls.env.ref("stock.warehouse0")
         cls.location_dest = cls.warehouse.lot_stock_id
+        cls.env["stock.location.orderpoint"].search([]).write({"active": False})
 
     def _create_picking_type(self, name, location_src, location_dest, warehouse):
         return self.env["stock.picking.type"].create(
@@ -98,12 +99,14 @@ class TestLocationOrderpointCommon(SavepointCase):
         return move
 
     def _create_outgoing_move(self, qty, location=None):
-        return self._create_move(
+        move = self._create_move(
             "Delivery",
             qty,
             location or self.location_dest,
             self.env.ref("stock.stock_location_customers"),
         )
+        move._action_assign()
+        return move
 
     def _create_quants(self, product, location, qty):
         self.env["stock.quant"].create(

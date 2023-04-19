@@ -14,5 +14,4 @@
         <field name="name">Replenishment Stock</field>
         <field name="location_id" ref="stock_location_replenish_view" />
     </record>
-
 </odoo>

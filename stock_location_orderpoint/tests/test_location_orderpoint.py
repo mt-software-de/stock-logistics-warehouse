@@ -91,7 +91,7 @@ class TestLocationOrderpoint(TestLocationOrderpointCommon):
         move_qty = 12
         with trap_jobs() as trap:
             move = self._create_outgoing_move(move_qty)
-            trap.assert_jobs_count(1, only=job_func)
+            trap.assert_jobs_count(0, only=job_func)
             trap.perform_enqueued_jobs()
             replenish_move = self.env["stock.move"].search(
                 [
@@ -161,6 +161,6 @@ class TestLocationOrderpoint(TestLocationOrderpointCommon):
         Check after each creation that count is increasing.
         """
         _, _ = self._create_orderpoint_complete("Stock2", trigger="cron")
-        self.assertEqual(2, self.location_dest.location_orderpoint_count)
+        self.assertEqual(1, self.location_dest.location_orderpoint_count)
         _, _ = self._create_orderpoint_complete("Stock3", trigger="cron")
-        self.assertEqual(3, self.location_dest.location_orderpoint_count)
+        self.assertEqual(2, self.location_dest.location_orderpoint_count)

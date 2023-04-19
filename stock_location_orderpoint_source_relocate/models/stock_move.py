@@ -6,12 +6,17 @@ from odoo import models
 class StockMove(models.Model):
     _inherit = "stock.move"
 
+    def _action_assign(self, *args, **kwargs):
+        self = self.with_context(skip_auto_replenishment=True)
+        res = super()._action_assign(*args, **kwargs)
+        self = self.with_context(skip_auto_replenishment=False)
+        return res
+
     def _apply_source_relocate_rule(self, *args, **kwargs):
         relocated = super()._apply_source_relocate_rule(*args, **kwargs)
         if not relocated:
             return relocated
-        relocated._prepare_location_orderpoint_replenishment(
-            "location_id",
-            self.env["stock.location.orderpoint"]._get_waiting_move_domain(),
-        )
+        relocated.with_context(
+            skip_auto_replenishment=False
+        )._prepare_auto_replenishment_for_waiting_moves()
         return relocated

@@ -241,9 +241,12 @@ class StockReserveRuleRemoval(models.Model):
             if location.id in locations_with_other_quants:
                 continue
 
-            location_quantity = sum(location_quants.mapped("quantity")) - sum(
-                location_quants.mapped("reserved_quantity")
-            )
+            # temporary patch - need fixing by creating a new strategy and
+            # change configuration
+            location_quantity = sum(location_quants.mapped("quantity"))
+            # location_quantity = sum(location_quants.mapped("quantity")) - sum(
+            #     location_quants.mapped("reserved_quantity")
+            # )
 
             if location_quantity <= 0:
                 continue

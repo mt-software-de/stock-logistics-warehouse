@@ -5,7 +5,6 @@ import hashlib
 import struct
 
 from odoo import fields, models
-from odoo.exceptions import UserError
 
 
 class StockRule(models.Model):
@@ -28,9 +27,16 @@ class StockRule(models.Model):
                 )
                 lock_acquired = self.env.cr.fetchone()[0]
                 if not lock_acquired:
-                    raise UserError(
-                        f"The auto procurement group for product {product.name} "
-                        "is already being created by someone else."
+                    # This error will be catched by odoo or the job queue
+                    # runner and will cause a retry
+                    self.env.cr.execute(
+                        """
+                        do $$
+                            begin
+                                raise SQLSTATE '55P03';
+                            end
+                        $$ language plpgsql;
+                    """
                     )
         return super()._get_auto_procurement_group(product)
 

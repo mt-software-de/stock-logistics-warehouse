@@ -140,3 +140,5 @@ class TestProcurementAutoCreateGroupByProduct(TestProcurementAutoCreateGroup):
             with self.assertRaises(psycopg2.OperationalError) as cm:
                 rule2._get_auto_procurement_group(product2)
             self.assertTrue(cm.exception.pgcode in PG_CONCURRENCY_ERRORS_TO_RETRY)
+            new_cr.rollback()
+            new_cr.close()

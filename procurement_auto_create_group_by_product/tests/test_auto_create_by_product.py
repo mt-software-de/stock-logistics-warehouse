@@ -3,7 +3,7 @@
 
 import psycopg2
 
-from odoo import api, registry
+from odoo import api, registry, tools
 from odoo.service.model import PG_CONCURRENCY_ERRORS_TO_RETRY
 
 from odoo.addons.procurement_auto_create_group.tests.test_auto_create import (
@@ -137,8 +137,9 @@ class TestProcurementAutoCreateGroupByProduct(TestProcurementAutoCreateGroup):
             rule2.auto_create_group_by_product = True
             product2 = new_env["product.product"].browse(product.id)
             self.assertFalse(product2.auto_create_procurement_group_ids)
-            with self.assertRaises(psycopg2.OperationalError) as cm:
+            with self.assertRaises(psycopg2.OperationalError) as cm, tools.mute_logger(
+                "odoo.sql_db"
+            ):
                 rule2._get_auto_procurement_group(product2)
             self.assertTrue(cm.exception.pgcode in PG_CONCURRENCY_ERRORS_TO_RETRY)
             new_cr.rollback()
-            new_cr.close()

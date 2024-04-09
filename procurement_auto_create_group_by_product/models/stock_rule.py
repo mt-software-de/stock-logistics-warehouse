@@ -21,9 +21,7 @@ class StockRule(models.Model):
             lock_name = f"product.product,{product.id}-auto-proc-group"
             hasher = hashlib.sha1(str(lock_name).encode())
             int_lock = struct.unpack("q", hasher.digest()[:8])
-            self.env.cr.execute(
-                "SELECT pg_try_advisory_xact_lock(%s);", (int_lock,)
-            )
+            self.env.cr.execute("SELECT pg_try_advisory_xact_lock(%s);", (int_lock,))
             lock_acquired = self.env.cr.fetchone()[0]
             if not lock_acquired:
                 # This error will be catched by odoo or the job queue
